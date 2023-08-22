@@ -1,0 +1,906 @@
+一.环境配置
+1.源码版本
+<version>4.1.11-SNAPSHOT</version>
+2.服务端
+http://www.eric.cas.server.com:8080/cas-server
+3.cas client
+http://www.eric.cas.client.com:8081/cas/index.do
+4.cas-server-webapp的web.xml配置
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0">
+    <display-name>Central Authentication System (CAS) 4.1.0-SNAPSHOT</display-name>
+
+    <context-param>
+        <param-name>isLog4jAutoInitializationDisabled</param-name>
+        <param-value>true</param-value>
+    </context-param>
+
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>
+            /WEB-INF/spring-configuration/*.xml
+            /WEB-INF/deployerConfigContext.xml
+            <!-- this enables extensions and addons to contribute to overall CAS' application context
+                 by loading spring context files from classpath i.e. found in classpath jars, etc. -->
+            classpath*:/META-INF/spring/*.xml
+        </param-value>
+    </context-param>
+
+    <filter>
+        <filter-name>characterEncodingFilter</filter-name>
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>characterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>CAS Client Info Logging Filter</filter-name>
+        <filter-class>org.jasig.inspektr.common.web.ClientInfoThreadLocalFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CAS Client Info Logging Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>requestParameterSecurityFilter</filter-name>
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>requestParameterSecurityFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/status/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/statistics/*</url-pattern>
+    </filter-mapping>
+
+    <!--
+      - Loads the CAS ApplicationContext.
+    -->
+    <listener>
+        <listener-class>
+            org.springframework.web.context.ContextLoaderListener
+        </listener-class>
+    </listener>
+    <listener>
+        <listener-class>
+            org.jasig.cas.CasEnvironmentContextListener
+        </listener-class>
+    </listener>
+    <servlet>
+        <servlet-name>cas</servlet-name>
+        <servlet-class>
+            org.springframework.web.servlet.DispatcherServlet
+        </servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>/WEB-INF/cas-servlet.xml, /WEB-INF/cas-servlet-*.xml</param-value>
+        </init-param>
+        <init-param>
+            <param-name>publishContext</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet>
+        <servlet-name>metrics-health</servlet-name>
+        <servlet-class>com.codahale.metrics.servlets.HealthCheckServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>metrics</servlet-name>
+        <servlet-class>com.codahale.metrics.servlets.MetricsServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>metrics-ping</servlet-name>
+        <servlet-class>com.codahale.metrics.servlets.PingServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>metrics-threads</servlet-name>
+        <servlet-class>com.codahale.metrics.servlets.ThreadDumpServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/login</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/logout</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/validate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/serviceValidate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/p3/serviceValidate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/proxy</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/proxyValidate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/p3/proxyValidate</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/CentralAuthenticationService</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/status</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/statistics</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/statistics/ssosessions</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/status/config</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>metrics-ping</servlet-name>
+        <url-pattern>/statistics/ping</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>metrics</servlet-name>
+        <url-pattern>/statistics/metrics</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>metrics-threads</servlet-name>
+        <url-pattern>/statistics/threads</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>metrics-health</servlet-name>
+        <url-pattern>/statistics/healthcheck</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/authorizationFailure.html</url-pattern>
+    </servlet-mapping>
+    <!-- REST support if cas-server-support-rest is included -->
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/v1/*</url-pattern>
+    </servlet-mapping>
+
+    <!--
+    <servlet-mapping>
+        <servlet-name>cas</servlet-name>
+        <url-pattern>/samlValidate</url-pattern>
+    </servlet-mapping>
+    -->
+
+    <session-config>
+        <!-- Default to 5 minute session timeouts -->
+        <session-timeout>5</session-timeout>
+        <tracking-mode>COOKIE</tracking-mode>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+    </session-config>
+
+    <error-page>
+        <error-code>401</error-code>
+        <location>/authorizationFailure.html</location>
+    </error-page>
+
+    <error-page>
+        <error-code>403</error-code>
+        <location>/authorizationFailure.html</location>
+    </error-page>
+
+    <error-page>
+        <error-code>404</error-code>
+        <location>/</location>
+    </error-page>
+
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/view/jsp/errors.jsp</location>
+    </error-page>
+
+    <error-page>
+        <error-code>501</error-code>
+        <location>/WEB-INF/view/jsp/errors.jsp</location>
+    </error-page>
+
+    <error-page>
+        <error-code>503</error-code>
+        <location>/WEB-INF/view/jsp/errors.jsp</location>
+    </error-page>
+
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+</web-app>
+
+
+
+
+二. 服务端登录流程解析
+首先找到服务端登录流程配置文件login-webflow.xml
+
+/WEB-INF/webflow/login/login-webflow.xml
+1. 访问Cas client 地址
+http://www.eric.cas.client.com:8081/cas/index.do
+
+2. 第一次访问，用户未登录，则跳转到cas server进行登录认证
+http://www.eric.cas.server.com:8080/cas-server/login?service=http://www.eric.cas.client.com:8081/cas/index.do
+请求到达服务端，登录流程具体怎么开始呢？
+具体登录流程信息，可以查看login-webflow.xml配置文件
+
+login-webflow.xml部分配置代码
+#设置变量存储登录信息
+<var name="credential" class="org.jasig.cas.authentication.RememberMeUsernamePasswordCredential"/>
+// 登录流程开始 初始化
+<on-start>
+    <evaluate expression="initialFlowSetupAction"/>
+</on-start>
+(1). 设置变量
+(2). 初始化initialFlowSetupAction 具体初始化信息配置在cas-servlet.xml文件
+  <bean id="initialFlowSetupAction" class="org.jasig.cas.web.flow.InitialFlowSetupAction"
+    p:argumentExtractors-ref="argumentExtractors"
+        p:warnCookieGenerator-ref="warnCookieGenerator"
+        p:ticketGrantingTicketCookieGenerator-ref="ticketGrantingTicketCookieGenerator"
+        p:servicesManager-ref="servicesManager"
+        p:enableFlowOnAbsentServiceRequest="${create.sso.missing.service:true}"  />
+
+以下参数在配置文件WEB-INF/spring-configuration对应的配置文件中
+
+argumentExtractors，
+warnCookieGenerator
+ticketGrantingTicketCookieGenerator
+argumentExtractorsConfiguration.xml
+cas参数提取配置 主要用于提取cas client发送过来的请求参数
+
+    <bean
+            id="casArgumentExtractor"
+            class="org.jasig.cas.web.support.CasArgumentExtractor"/>
+
+    <util:list id="argumentExtractors">
+        <!-- <ref bean="samlArgumentExtractor" /> -->
+        <ref bean="casArgumentExtractor"/>
+    </util:list>
+warnCookieGenerator.xml
+
+#设置warnCookie信息
+<bean id="warnCookieGenerator" class="org.jasig.cas.web.support.CookieRetrievingCookieGenerator"
+      p:cookieHttpOnly="true"
+      p:cookieSecure="false"
+      p:cookieMaxAge="-1"
+      p:cookieName="CASPRIVACY"
+      p:cookiePath=""/>
+ticketGrantingTicketCookieGenerator.xml
+TGT生成策略配置
+
+   <bean id="ticketGrantingTicketCookieGenerator" class="org.jasig.cas.web.support.CookieRetrievingCookieGenerator"
+          c:casCookieValueManager-ref="cookieValueManager"
+          p:cookieSecure="false"
+          p:cookieMaxAge="-1"
+          p:cookieName="TGC"
+          p:rememberMeMaxAge="7200"
+          p:cookiePath=""/>
+
+    <bean id="cookieCipherExecutor" class="org.jasig.cas.util.BaseStringCipherExecutor"
+          c:secretKeyEncryption="${tgc.encryption.key:}"
+          c:secretKeySigning="${tgc.signing.key:}"/>
+
+    <bean id="cookieValueManager" class="org.jasig.cas.web.support.DefaultCasCookieValueManager"
+          c:cipherExecutor-ref="cookieCipherExecutor"/>
+初始化部分会调用InitialFlowSetupAction的doExecute方法，如果有特殊需求，可以在此方法中增加相应的逻辑。如果希望单点登录集成统一身份认证，那么可以在此处增加统一身份认证的逻辑。
+
+    @Override
+    protected Event doExecute(final RequestContext context) throws Exception {
+        final HttpServletRequest request = WebUtils.getHttpServletRequest(context);
+        final String contextPath = context.getExternalContext().getContextPath();
+        final String cookiePath = StringUtils.isNotBlank(contextPath) ? contextPath + '/' : "/";
+
+        if (StringUtils.isBlank(warnCookieGenerator.getCookiePath())) {
+            logger.info("Setting path for cookies for warn cookie generator to: {} ", cookiePath);
+            this.warnCookieGenerator.setCookiePath(cookiePath);
+        } else {
+            logger.debug("Warning cookie path is set to {} and path {}", warnCookieGenerator.getCookieDomain(),
+                    warnCookieGenerator.getCookiePath());
+        }
+        if (StringUtils.isBlank(ticketGrantingTicketCookieGenerator.getCookiePath())) {
+            logger.info("Setting path for cookies for TGC cookie generator to: {} ", cookiePath);
+            this.ticketGrantingTicketCookieGenerator.setCookiePath(cookiePath);
+        } else {
+            logger.debug("TGC cookie path is set to {} and path {}", ticketGrantingTicketCookieGenerator.getCookieDomain(),
+                    ticketGrantingTicketCookieGenerator.getCookiePath());
+        }
+        
+        //将TGT放在FlowScope作用域和RequestScope中
+        
+        WebUtils.putTicketGrantingTicketInScopes(context,
+                this.ticketGrantingTicketCookieGenerator.retrieveCookieValue(request));
+        //将warnCookieValue放在FlowScope作用域中
+        
+        WebUtils.putWarningCookie(context,
+                Boolean.valueOf(this.warnCookieGenerator.retrieveCookieValue(request)));
+                
+        //根据配置的参数提取器argumentExtractors获取service参数
+        
+        final Service service = WebUtils.getService(this.argumentExtractors, context);
+
+
+        if (service != null) {
+            logger.debug("Placing service in context scope: [{}]", service.getId());
+            
+            //根据请求service匹配cas-server-webapp/src/main/resources/services下定义的service
+            
+            final RegisteredService registeredService = this.servicesManager.findServiceBy(service);
+            if (registeredService != null && registeredService.getAccessStrategy().isServiceAccessAllowed()) {
+                logger.debug("Placing registered service [{}] with id [{}] in context scope",
+                        registeredService.getServiceId(),
+                        registeredService.getId());
+                WebUtils.putRegisteredService(context, registeredService);
+
+                final RegisteredServiceAccessStrategy accessStrategy = registeredService.getAccessStrategy();
+                if (accessStrategy.getUnauthorizedRedirectUrl() != null) {
+                    logger.debug("Placing registered service's unauthorized redirect url [{}] with id [{}] in context scope",
+                            accessStrategy.getUnauthorizedRedirectUrl(),
+                            registeredService.getServiceId());
+                    WebUtils.putUnauthorizedRedirectUrl(context, accessStrategy.getUnauthorizedRedirectUrl());
+                }
+            }
+        } else if (!this.enableFlowOnAbsentServiceRequest) {
+            logger.warn("No service authentication request is available at [{}]. CAS is configured to disable the flow.",
+                    WebUtils.getHttpServletRequest(context).getRequestURL());
+            throw new NoSuchFlowExecutionException(context.getFlowExecutionContext().getKey(),
+                    new UnauthorizedServiceException("screen.service.required.message", "Service is required"));
+        }
+        //将service放在FlowScope作用域中
+        WebUtils.putService(context, service);
+        return result("success");
+    }
+Service 属性图
+
+
+image
+RegisteredService 属性图
+
+
+image
+InitialFlowSetupAction的doExecute要做的就是把ticketGrantingTicketId，warnCookieValue和service放到FlowScope的作用域中，以便在登录流程中的state中进行判断。初始化完成后，登录流程流转到第一个state（ticketGrantingTicketCheck）。
+
+    <action-state id="ticketGrantingTicketCheck">
+        <evaluate expression="ticketGrantingTicketCheckAction"/>
+        <transition on="notExists" to="gatewayRequestCheck"/>
+        <transition on="invalid" to="terminateSession"/>
+        <transition on="valid" to="hasServiceCheck"/>
+    </action-state>
+执行TicketGrantingTicketCheckAction的doExecute方法
+
+    protected Event doExecute(final RequestContext requestContext) throws Exception {
+        // 查询tgtId
+        final String tgtId = WebUtils.getTicketGrantingTicketId(requestContext);
+        if (!StringUtils.hasText(tgtId)) {
+            return new Event(this, NOT_EXISTS);
+        }
+
+        String eventId = INVALID;
+        try {
+            final Ticket ticket = this.centralAuthenticationService.getTicket(tgtId, Ticket.class);
+            if (ticket != null && !ticket.isExpired()) {
+                eventId = VALID;
+            }
+        } catch (final TicketException e) {
+            logger.trace("Could not retrieve ticket id {} from registry.", e);
+        }
+        return new Event(this,  eventId);
+    }
+由于第一次访问没有登录,tgtId为null,则跳转到第二个state
+
+    <decision-state id="gatewayRequestCheck">
+        <if test="requestParameters.gateway != '' and requestParameters.gateway != null and flowScope.service != null"
+            then="gatewayServicesManagementCheck" else="serviceAuthorizationCheck"/>
+    </decision-state>
+因为初始化时，已经把service保存在了FlowScope作用域中，但request中的参数gateway不存在，登录流程流转到第三个state（serviceAuthorizationCheck）。
+
+    <!-- Do a service authorization check early without the need to login first -->
+    <action-state id="serviceAuthorizationCheck">
+        <evaluate expression="serviceAuthorizationCheck"/>
+        <transition to="generateLoginTicket"/>
+    </action-state>
+执行ServiceAuthorizationCheck的doExecute方法
+
+ @Override
+    protected Event doExecute(final RequestContext context) throws Exception {
+        final Service service = WebUtils.getService(context);
+        //No service == plain /login request. Return success indicating transition to the login form
+        if (service == null) {
+            return success();
+        }
+        
+        if (this.servicesManager.getAllServices().isEmpty()) {
+            final String msg = String.format("No service definitions are found in the service manager. "
+                    + "Service [%s] will not be automatically authorized to request authentication.", service.getId());
+            logger.warn(msg);
+            throw new UnauthorizedServiceException(UnauthorizedServiceException.CODE_EMPTY_SVC_MGMR);
+        }
+        final RegisteredService registeredService = this.servicesManager.findServiceBy(service);
+
+        if (registeredService == null) {
+            final String msg = String.format("Service Management: Unauthorized Service Access. "
+                    + "Service [%s] is not found in service registry.", service.getId());
+            logger.warn(msg);
+            throw new UnauthorizedServiceException(UnauthorizedServiceException.CODE_UNAUTHZ_SERVICE, msg);
+        }
+        if (!registeredService.getAccessStrategy().isServiceAccessAllowed()) {
+            final String msg = String.format("Service Management: Unauthorized Service Access. "
+                    + "Service [%s] is not allowed access via the service registry.", service.getId());
+            
+            logger.warn(msg);
+
+            WebUtils.putUnauthorizedRedirectUrlIntoFlowScope(context,
+                    registeredService.getAccessStrategy().getUnauthorizedRedirectUrl());
+            throw new UnauthorizedServiceException(UnauthorizedServiceException.CODE_UNAUTHZ_SERVICE, msg);
+        }
+
+        return success();
+    }
+ServiceAuthorizationCheck的doExecute方法，要做的就是判断FlowScope作用域中是否存在service，如果service存在，查找service的注册信息。登录流程流转到第四个state（generateLoginTicket）。
+
+    <action-state id="generateLoginTicket">
+        <evaluate expression="generateLoginTicketAction.generate(flowRequestContext)"/>
+        <transition on="generated" to="viewLoginForm"/>
+    </action-state>
+执行GenerateLoginTicketAction的generate方法
+
+    public final String generate(final RequestContext context) {
+        final String loginTicket = this.ticketIdGenerator.getNewTicketId(PREFIX);
+        logger.debug("Generated login ticket {}", loginTicket);
+        // 保存loginTicket到FlowScope作用域中
+        WebUtils.putLoginTicket(context, loginTicket);
+        return "generated";
+    }
+GenerateLoginTicketAction的generate要做的就是生成loginTicket，并且把loginTicket放到FlowScope作用域中。登录流程流转到第五个state（viewLoginForm）。
+
+/WEB-INF/cas-servlet.xml部分代码
+
+<bean id="generateLoginTicketAction" class="org.jasig.cas.web.flow.GenerateLoginTicketAction"  
+    p:ticketIdGenerator-ref="loginTicketUniqueIdGenerator" />  
+/WEB-INF/spring-configuration/uniqueIdGenerators.xml部分代码
+
+<bean id="loginTicketUniqueIdGenerator" class="org.jasig.cas.util.DefaultUniqueTicketIdGenerator">  
+    <constructor-arg  
+        index="0"  
+        type="int"  
+        value="30" />  
+</bean>
+DefaultUniqueTicketIdGenerator要做的就是生成以LT作为前缀的loginTicket（例：LT-2-pfDmbEHfX2OkS0swLtDd7iDwmzlhsn）。
+
+==注：LT只作为登录时使用的票据。==
+
+ <view-state id="viewLoginForm" view="casLoginView" model="credential">
+        <binder>
+            <binding property="username" required="true"/>
+            <binding property="password" required="true"/>
+            <binding property="rememberMe" />
+        </binder>
+        <on-entry>
+            <set name="viewScope.commandName" value="'credential'"/>
+
+            <!--
+            <evaluate expression="samlMetadataUIParserAction" />
+            -->
+        </on-entry>
+        <transition on="submit" bind="true" validate="true" to="realSubmit"/>
+    </view-state>
+至此，经过五个state的流转，我们完成了第一次访问集成了单点登录的应用系统，此时流转到CAS单点登录服务器端的登录页面/WEB-INF/jsp/ui/default/casLoginView.jsp。
+
+由于casLoginView.jsp是CAS提供的默认登录页面，需要把此页面修改成我们系统需要的登录页面，格式需要参考casLoginView.jsp。
+
+注意:
+默认的登录页面中有lt、execution和_eventId三个隐藏参数，lt参数值就是在GenerateLoginTicketAction的generate方法中生成的loginTicket。
+
+<input type="hidden" name="lt" value="${loginTicket}" />
+<input type="hidden" name="execution" value="${flowExecutionKey}" />
+<input type="hidden" name="_eventId" value="submit" />
+登录页面输入用户名和密码，登录cas
+
+    <action-state id="realSubmit">
+        <evaluate
+                expression="authenticationViaFormAction.submit(flowRequestContext, flowScope.credential, messageContext)"/>
+        <transition on="warn" to="warn"/>
+        <!--
+        To enable AUP workflows, replace the 'success' transition with the following:
+        <transition on="success" to="acceptableUsagePolicyCheck" />
+        -->
+        <transition on="success" to="sendTicketGrantingTicket"/>
+        <transition on="successWithWarnings" to="showMessages"/>
+        <transition on="authenticationFailure" to="handleAuthenticationFailure"/>
+        <transition on="error" to="generateLoginTicket"/>
+    </action-state>
+执行authenticationViaFormAction的submit方法
+
+    public final Event submit(final RequestContext context, final Credential credential,
+                              final MessageContext messageContext) {
+        //验证请求参数中loginTicket和FlowScope作用域中loginTicket是否存在且相等
+        if (!checkLoginTicketIfExists(context)) {
+            return returnInvalidLoginTicketEvent(context, messageContext);
+        }
+        
+        // 判断是否已经存在TGT
+        if (isRequestAskingForServiceTicket(context)) {
+            return grantServiceTicket(context, credential);
+        }
+        //根据用户凭证构造TGT，把TGT放到requestScope中，同时把TGT缓存到服务器的cache<ticketId,TGT>中  
+        return createTicketGrantingTicket(context, credential, messageContext);
+    }
+由于是第一次登陆TGT为空，执行createTicketGrantingTicket方法如下：
+
+/**
+     * Create ticket granting ticket for the given credentials.
+     * Adds all warnings into the message context.
+     *
+     * @param context the context
+     * @param credential the credential
+     * @param messageContext the message context
+     * @return the resulting event.
+     * @since 4.1.0
+     */
+    protected Event createTicketGrantingTicket(final RequestContext context, final Credential credential,
+                                               final MessageContext messageContext) {
+        try {
+            // 根据认证信息创建TGT 此时并没有把TGT和对应的service做关联
+            final TicketGrantingTicket tgt = this.centralAuthenticationService.createTicketGrantingTicket(credential);
+            WebUtils.putTicketGrantingTicketInScopes(context, tgt);
+            putWarnCookieIfRequestParameterPresent(context);
+            putPublicWorkstationToFlowIfRequestParameterPresent(context);
+            if (addWarningMessagesToMessageContextIfNeeded(tgt, messageContext)) {
+                return newEvent(SUCCESS_WITH_WARNINGS);
+            }
+            return newEvent(SUCCESS);
+        } catch (final AuthenticationException e) {
+            logger.debug(e.getMessage(), e);
+            return newEvent(AUTHENTICATION_FAILURE, e);
+        } catch (final Exception e) {
+            logger.debug(e.getMessage(), e);
+            return newEvent(ERROR, e);
+        }
+    }
+创建TGT实际调用的是CentralAuthenticationServiceImpl类的createTicketGrantingTicket方法 代码如下
+
+    public TicketGrantingTicket createTicketGrantingTicket(final Credential... credentials)
+            throws AuthenticationException, TicketException {
+        //认证失败会直接返回错误提示信息 流程终止
+        final Set<Credential> sanitizedCredentials = sanitizeCredentials(credentials);
+        if (!sanitizedCredentials.isEmpty()) {
+            final Authentication authentication = this.authenticationManager.authenticate(credentials);
+            // 根据ticketExpirationPolicies.xml配置生成TGT对象
+            final TicketGrantingTicket ticketGrantingTicket = new TicketGrantingTicketImpl(
+                    this.ticketGrantingTicketUniqueTicketIdGenerator
+                            .getNewTicketId(TicketGrantingTicket.PREFIX),
+                    authentication, this.ticketGrantingTicketExpirationPolicy);
+            //根据ticketRegistry.xml配置保存TGT到缓存中
+            this.ticketRegistry.addTicket(ticketGrantingTicket);
+            return ticketGrantingTicket;
+        }
+        final String msg = "No credentials were specified in the request for creating a new ticket-granting ticket";
+        logger.warn(msg);
+        throw new TicketCreationException(new IllegalArgumentException(msg));
+    }
+注意：
+可以按照需要配置ticketRegistry.xml，把TGT缓存到Redis等内存数据库中
+
+既然是登录，那么可以在此方法中加入自己的业务逻辑，比如，可以加入验证码的判断，以及错误信息的提示，用户名或者密码错误，验证码错误等逻辑判断。
+
+生成TGT成功 返回success 跳转到流程sendTicketGrantingTicket
+
+<action-state id="sendTicketGrantingTicket">  
+    <evaluate expression="sendTicketGrantingTicketAction" />  
+    <transition to="serviceCheck" />  
+</action-state>  
+执行SendTicketGrantingTicketAction的doExecute方法
+
+protected Event doExecute(final RequestContext context) {
+       //requestScope和FlowScope中获取TGT 
+        final String ticketGrantingTicketId = WebUtils.getTicketGrantingTicketId(context);
+        final String ticketGrantingTicketValueFromCookie = (String) context.getFlowScope().get("ticketGrantingTicketId");
+
+        if (ticketGrantingTicketId == null) {
+            return success();
+        }
+
+        if (isAuthenticatingAtPublicWorkstation(context)) {
+            LOGGER.info("Authentication is at a public workstation. "
+                    + "SSO cookie will not be generated. Subsequent requests will be challenged for authentication.");
+        } else if (!this.createSsoSessionCookieOnRenewAuthentications && isAuthenticationRenewed(context)) {
+            LOGGER.info("Authentication session is renewed but CAS is not configured to create the SSO session. "
+                    + "SSO cookie will not be generated. Subsequent requests will be challenged for authentication.");
+        } else {
+        
+             //response中添加TGC的cookie
+             
+            this.ticketGrantingTicketCookieGenerator.addCookie(WebUtils.getHttpServletRequest(context), WebUtils
+                    .getHttpServletResponse(context), ticketGrantingTicketId);
+        }
+
+        if (ticketGrantingTicketValueFromCookie != null && !ticketGrantingTicketId.equals(ticketGrantingTicketValueFromCookie)) {
+            LOGGER.debug("Found Ticket-granting ticket mismatch. Removing [{}]", ticketGrantingTicketValueFromCookie);
+            this.centralAuthenticationService.destroyTicketGrantingTicket(ticketGrantingTicketValueFromCookie);
+        }
+
+        return success();
+    }
+SendTicketGrantingTicketAction的doExecute要做的是获取TGT，并根据TGT生成cookie添加到response。登录流程流转到第三个state（serviceCheck）。
+
+<decision-state id="serviceCheck">  
+    <if test="flowScope.service != null" then="generateServiceTicket" else="viewGenericLoginSuccess" />  
+</decision-state>  
+由于此时FlowScope中存在service=http://www.eric.cas.client.com:8081/cas/index.do,登录流程流转到第四个state（generateServiceTicket）
+
+    <action-state id="generateServiceTicket">
+        <evaluate expression="generateServiceTicketAction"/>
+        <transition on="success" to="warn"/>
+        <transition on="authenticationFailure" to="handleAuthenticationFailure"/>
+        <transition on="error" to="generateLoginTicket"/>
+        <transition on="gateway" to="gatewayServicesManagementCheck"/>
+    </action-state>
+执行GenerateServiceTicketAction的doExecute方法
+
+protected Event doExecute(final RequestContext context) {
+        final Service service = WebUtils.getService(context);
+        final String ticketGrantingTicket = WebUtils.getTicketGrantingTicketId(context);
+
+        logger.debug("Attempting to generate service ticket based on [{}] and for [{}]", ticketGrantingTicket, service);
+        try {
+            // 根据TGT和service生成ST 并将service保存到TGT的services对象中  建立关联关系
+            
+            final ServiceTicket serviceTicketId = this.centralAuthenticationService.grantServiceTicket(ticketGrantingTicket, service);
+            logger.debug("Created service ticket [{}]", serviceTicketId);
+            
+            //ST放到requestScope中
+            
+            WebUtils.putServiceTicketInRequestScope(context, serviceTicketId);
+            return success();
+        } catch (final TicketException e) {
+            logger.error(e.getMessage(), e);
+
+            if (e instanceof InvalidTicketException) {
+                logger.debug("Ticket is deemed invalid. Destroying [{}]", ticketGrantingTicket);
+                this.centralAuthenticationService.destroyTicketGrantingTicket(ticketGrantingTicket);
+            }
+            if (isGatewayPresent(context)) {
+                return result("gateway");
+            }
+
+            return newEvent("error", e);
+        }
+    }
+GenerateServiceTicketAction的doExecute方法要做的是根据service和TGT生成以ST为前缀的serviceTicket（例：ST-2-97kwhcdrBW97ynpBbZH5-cas01.example.org），并将service保存到TGT的services对象中 ，建立关联关系，同时把serviceTicket放到requestScope中。
+
+CentralAuthenticationServiceImpl的grantServiceTicket方法
+
+@Audit(
+            action = "SERVICE_TICKET",
+            actionResolverName = "GRANT_SERVICE_TICKET_RESOLVER",
+            resourceResolverName = "GRANT_SERVICE_TICKET_RESOURCE_RESOLVER")
+    @Timed(name = "GRANT_SERVICE_TICKET_TIMER")
+    @Metered(name = "GRANT_SERVICE_TICKET_METER")
+    @Counted(name = "GRANT_SERVICE_TICKET_COUNTER", monotonic = true)
+    @Override
+    public ServiceTicket grantServiceTicket(
+            final String ticketGrantingTicketId,
+            final Service service, final Credential... credentials)
+            throws AuthenticationException, TicketException {
+
+        logger.debug("Attempting to get ticket id {} to create service ticket", ticketGrantingTicketId);
+        final TicketGrantingTicket ticketGrantingTicket = getTicket(ticketGrantingTicketId, TicketGrantingTicket.class);
+        final RegisteredService registeredService = this.servicesManager.findServiceBy(service);
+
+        verifyRegisteredServiceProperties(registeredService, service);
+        final Set<Credential> sanitizedCredentials = sanitizeCredentials(credentials);
+
+        if (sanitizedCredentials.isEmpty() && !registeredService.getAccessStrategy().isServiceAccessAllowedForSso()) {
+            if (ticketGrantingTicket.getProxiedBy() != null) {
+                logger.warn("ServiceManagement: Service [{}] is not allowed to use SSO for proxying.", service.getId());
+                throw new UnauthorizedSsoServiceException();
+            } else if (ticketGrantingTicket.getProxiedBy() == null && ticketGrantingTicket.getCountOfUses() > 0) {
+                logger.warn("ServiceManagement: Service [{}] is not allowed to use SSO.", service.getId());
+                throw new UnauthorizedSsoServiceException();
+            }
+        }
+
+        Authentication currentAuthentication = null;
+        if (!sanitizedCredentials.isEmpty()) {
+            logger.debug("Attempting to authenticate sanitized credentials to create service ticket");
+            currentAuthentication = this.authenticationManager.authenticate(
+                    sanitizedCredentials.toArray(new Credential[]{}));
+            final Authentication original = ticketGrantingTicket.getAuthentication();
+            if (!currentAuthentication.getPrincipal().equals(original.getPrincipal())) {
+                logger.debug("Principal associated with current authentication {} does not match "
+                                + "the principal {} associated with the original authentication",
+                        currentAuthentication.getPrincipal(), original.getPrincipal());
+                throw new MixedPrincipalException(
+                        currentAuthentication, currentAuthentication.getPrincipal(), original.getPrincipal());
+            }
+            logger.debug("Added authentication to the collection of supplemental authentications");
+            ticketGrantingTicket.getSupplementalAuthentications().add(currentAuthentication);
+        }
+
+        final Service proxiedBy = ticketGrantingTicket.getProxiedBy();
+        if (proxiedBy != null) {
+            logger.debug("TGT is proxied by [{}]. Locating proxy service in registry...", proxiedBy.getId());
+            final RegisteredService proxyingService = servicesManager.findServiceBy(proxiedBy);
+
+            if (proxyingService != null) {
+                logger.debug("Located proxying service [{}] in the service registry", proxyingService);
+                if (!proxyingService.getProxyPolicy().isAllowedToProxy()) {
+                    logger.warn("Found proxying service {}, but it is not authorized to fulfill the proxy attempt made by {}",
+                            proxyingService.getId(), service.getId());
+                    throw new UnauthorizedProxyingException("Proxying is not allowed for registered service "
+                            + registeredService.getId());
+                }
+            } else {
+                logger.warn("No proxying service found. Proxy attempt by service [{}] (registered service [{}]) is not allowed.",
+                        service.getId(), registeredService.getId());
+                throw new UnauthorizedProxyingException("Proxying is not allowed for registered service "
+                        + registeredService.getId());
+            }
+        } else {
+            logger.debug("TGT is not proxied by another service");
+        }
+
+        // Perform security policy check by getting the authentication that satisfies the configured policy
+        // This throws if no suitable policy is found
+        logger.debug("Checking for authentication policy satisfaction...");
+        getAuthenticationSatisfiedByPolicy(ticketGrantingTicket.getRoot(), new ServiceContext(service, registeredService));
+
+        final List<Authentication> authentications = ticketGrantingTicket.getChainedAuthentications();
+        final Principal principal = authentications.get(authentications.size() - 1).getPrincipal();
+
+        logger.debug("Located principal {} for service ticket creation", principal);
+
+        final Map<String, Object> principalAttrs = registeredService.getAttributeReleasePolicy().getAttributes(principal);
+        if (!registeredService.getAccessStrategy().doPrincipalAttributesAllowServiceAccess(principalAttrs)) {
+            logger.warn("ServiceManagement: Cannot grant service ticket because Service [{}] is not authorized for use by [{}].",
+                    service.getId(), principal);
+            throw new UnauthorizedServiceForPrincipalException();
+        }
+
+        final String uniqueTicketIdGenKey = service.getClass().getName();
+        logger.debug("Looking up service ticket id generator for [{}]", uniqueTicketIdGenKey);
+        UniqueTicketIdGenerator serviceTicketUniqueTicketIdGenerator =
+                this.uniqueTicketIdGeneratorsForService.get(uniqueTicketIdGenKey);
+        if (serviceTicketUniqueTicketIdGenerator == null) {
+            serviceTicketUniqueTicketIdGenerator = this.defaultServiceTicketIdGenerator;
+            logger.debug("Service ticket id generator not found for [{}]. Using the default generator...",
+                    uniqueTicketIdGenKey);
+        }
+
+        final String ticketPrefix = authentications.size() == 1 ? ServiceTicket.PREFIX : ServiceTicket.PROXY_TICKET_PREFIX;
+        final String ticketId = serviceTicketUniqueTicketIdGenerator.getNewTicketId(ticketPrefix);
+        logger.debug("Created new ticket id {}", ticketId);
+        // 生成ST 实际调用TicketGrantingTicketImpl的grantServiceTicket方法
+        final ServiceTicket serviceTicket = ticketGrantingTicket.grantServiceTicket(
+                ticketId,
+                service,
+                this.serviceTicketExpirationPolicy,
+                currentAuthentication != null);
+
+        logger.info("Granted ticket [{}] for service [{}] for user [{}]",
+                serviceTicket.getId(), service.getId(), principal.getId());
+        this.ticketRegistry.addTicket(serviceTicket);
+        logger.debug("Added service ticket {} to ticket registry", serviceTicket.getId());
+
+        return serviceTicket;
+    }
+TicketGrantingTicketImpl的grantServiceTicket方法
+
+/**
+     * {@inheritDoc}
+     * <p>The state of the ticket is affected by this operation and the
+     * ticket will be considered used. The state update subsequently may
+     * impact the ticket expiration policy in that, depending on the policy
+     * configuration, the ticket may be considered expired.
+     */
+    @Override
+    public synchronized ServiceTicket grantServiceTicket(final String id,
+        final Service service, final ExpirationPolicy expirationPolicy,
+        final boolean credentialsProvided) {
+        final ServiceTicket serviceTicket = new ServiceTicketImpl(id, this,
+            service, this.getCountOfUses() == 0 || credentialsProvided,
+            expirationPolicy);
+
+        updateState();
+
+        final List<Authentication> authentications = getChainedAuthentications();
+        service.setPrincipal(authentications.get(authentications.size()-1).getPrincipal());
+        // 按照key为ST，value为service的方式保存信息到TGT的services中
+        this.services.put(id, service);
+
+        return serviceTicket;
+    }
+TicketGrantingTicketImpl的grantServiceTicket方法负责生成ST 并保存service和ST到services中
+
+登录流程流转到第五个state（warn）
+
+    <decision-state id="warn">
+        <if test="flowScope.warnCookieValue" then="showWarningView" else="redirect"/>
+    </decision-state>
+由于此时FlowScope中不存在warnCookieValue，登录流程流转到第六个state（redirect）。
+
+    <action-state id="redirect">
+        <evaluate expression="flowScope.service.getResponse(requestScope.serviceTicketId)"
+                  result-type="org.jasig.cas.authentication.principal.Response" result="requestScope.response"/>
+        <transition to="postRedirectDecision"/>
+    </action-state>
+从requestScope中获取serviceTicket，构造response对象，并把response放到requestScope中。登录流程流转到第七个state（postRedirectDecision）
+
+    <decision-state id="postRedirectDecision">
+        <if test="requestScope.response.responseType.name() == 'POST'" then="postView" else="redirectView"/>
+    </decision-state>
+由于request请求（http://www.eric.cas.server.com:8080/login?service=http://www.eric.cas.client.com:8081/cas/index.do）是get类型，
+
+登录流程流转到第八个state（redirectView）
+
+    <end-state id="redirectView" view="externalRedirect:#{requestScope.response.url}"/>
+
+此时流程如下：
+
+跳转到应用系统（http://www.eric.cas.client.com:8081/cas/index.do?ticket=ST-1-bisKTgmT2pxKzzBLgncY-cas01.example.org）。
+进入CAS客户端的AuthenticationFilter过滤器，由于session中获取名为“const_cas_assertion”的assertion对象不存在，但是request有ticket参数，所以进入到下一个过滤器。
+TicketValidationFilter过滤器的validate方法通过httpClient访问CAS服务器端（http://www.eric.cas.server.com:8080/cas-server/serviceValidate?ticket=ST-1-4hH2s5tzsMGCcToDvGCb-cas01.example.org&service=http://www.eric.cas.client.com:8081/cas/index.do）验证ticket是否正确，并返回assertion对象。
+知识点：
+CentralAuthenticationServiceImpl类是CentralAuthenticationService的实现类,有关TGT的生成，保存，删除，验证都在
+该类中实现。
+
+至此CAS第一次登陆的完整流程结束。
+
+作者：Eric_暗夜
+链接：https://www.jianshu.com/p/c8b16e3499b5
+来源：简书
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
